@@ -79,6 +79,7 @@ use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Routing\Router;
 use PhpParser\ParserFactory;
 use PhpParser\PrettyPrinter;
+use Route;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -286,37 +287,39 @@ class ScrambleServiceProvider extends PackageServiceProvider
     }
 
     private function registerRoutes(): void
-    {
-        foreach (Scramble::getConfigurationsInstance()->all() as $api => $generatorConfig) {
-            /** @var Router $router */
-            $router = $this->app->get(Router::class);
+{
+    foreach (Scramble::getConfigurationsInstance()->all() as $api => $generatorConfig) {
+        /** @var Router $router */
+        $router = $this->app->get(Router::class);
 
-            if ($generatorConfig->uiRoute) {
-                $cb = is_callable($generatorConfig->uiRoute)
-                    ? $generatorConfig->uiRoute
-                    : fn ($router, $action) => $router->get($generatorConfig->uiRoute, $action);
+        if ($generatorConfig->uiRoute) {
+            $cb = is_callable($generatorConfig->uiRoute)
+                ? $generatorConfig->uiRoute
+                : fn ($router, $action) => $router->get('/docs/api', $action); // ← changed
 
-                $cb($router, function (Generator $generator) use ($api) {
-                    $config = Scramble::getGeneratorConfig($api);
+            $cb($router, function (Generator $generator) use ($api) {
+                $config = Scramble::getGeneratorConfig($api);
 
-                    return view('scramble::docs', [
-                        'spec' => $generator($config),
-                        'config' => $config,
-                    ]);
-                })->middleware($generatorConfig->get('middleware', [RestrictedDocsAccess::class]));
-            }
+                // ← point to your custom view
+                // return view('vendor.scramble.docs', [
+                return view('vendor.scramble.docs.custom-api', [
+                    'spec' => $generator($config),
+                    'config' => $config,
+                ]);
+            })->middleware($generatorConfig->get('middleware', [RestrictedDocsAccess::class]));
+        }
 
-            if ($generatorConfig->documentRoute) {
-                $cb = is_callable($generatorConfig->documentRoute)
-                    ? $generatorConfig->documentRoute
-                    : fn ($router, $action) => $router->get($generatorConfig->documentRoute, $action);
+        if ($generatorConfig->documentRoute) {
+            $cb = is_callable($generatorConfig->documentRoute)
+                ? $generatorConfig->documentRoute
+                : fn ($router, $action) => $router->get('/docs/api.json', $action);
 
-                $cb($router, function (Generator $generator) use ($api) {
-                    $config = Scramble::getGeneratorConfig($api);
+            $cb($router, function (Generator $generator) use ($api) {
+                $config = Scramble::getGeneratorConfig($api);
 
-                    return response()->json($generator($config), options: JSON_PRETTY_PRINT);
-                })->middleware($generatorConfig->get('middleware', [RestrictedDocsAccess::class]));
-            }
+                return response()->json($generator($config), options: JSON_PRETTY_PRINT);
+            })->middleware($generatorConfig->get('middleware', [RestrictedDocsAccess::class]));
         }
     }
+}
 }

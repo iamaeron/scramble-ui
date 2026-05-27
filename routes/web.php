@@ -1,7 +1,10 @@
 <?php
 
-use Dedoc\Scramble\Scramble;
 
-Scramble::registerUiRoute(path: 'docs/api')->name('scramble.docs.ui');
+use Dedoc\Scramble\Http\ApiSpecHandler;
 
-Scramble::registerJsonSpecificationRoute(path: 'docs/api.json')->name('scramble.docs.document');
+// Your custom docs UI
+// Route::get('/docs/api', fn() => view('docs.custom-api'))->name('docs');
+
+// Scramble's JSON spec — Alpine fetches this
+// Route::get('/docs/api.json', ApiSpecHandler::class)->name('scramble.docs.json');
