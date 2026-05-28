@@ -1,10 +1,14 @@
-<p>
+<!-- <p>
   <a href="https://scramble.dedoc.co" target="_blank">
     <img src="./.github/gh-img.png?v=1" alt="Scramble – Laravel API documentation generator"/>
   </a>
-</p>
+</p> -->
 
-# Scramble
+# iamaeron/scramble-ui
+
+A custom dark UI theme for dedoc/scramble.
+
+## Scramble
 
 Scramble generates API documentation for Laravel project. Without requiring you to manually write PHPDoc annotations. Docs are generated in OpenAPI 3.1.0 format.
 
@@ -12,16 +16,12 @@ Scramble generates API documentation for Laravel project. Without requiring you 
 
 You can find full documentation at [scramble.dedoc.co](https://scramble.dedoc.co).
 
-## Introduction
-
-The main motto of the project is generating your API documentation without requiring you to annotate your code.
-
-This allows you to focus on code and avoid annotating every possible param/field as it may result in outdated documentation. By generating docs automatically from the code your API will always have up-to-date docs which you can trust.
-
 ## Installation
 You can install the package via composer:
 ```shell
-composer require dedoc/scramble
+composer require iamaeron/scramble-ui
+
+php artisan vendor:publish --tag=scramble-ui-assets
 ```
 
 ## Usage
