@@ -14,18 +14,14 @@ class ScrambleUiServiceProvider extends PackageServiceProvider
     public function boot(): void
     {
         parent::boot();
-
-        $this->publishes([
-            $this->package->basePath('/../public/css/docs.css') => public_path('vendor/scramble-ui/css/docs.css'),
-            $this->package->basePath('/../public/js/docs.js') => public_path('vendor/scramble-ui/js/docs.js'),
-        ], 'scramble-ui-assets');
     }
 
     public function configurePackage(Package $package): void
     {
         $package
             ->name('scramble-ui')
-            ->hasViews('scramble-ui');
+            ->hasViews('scramble-ui')
+            ->hasAssets();
     }
 
     public function bootingPackage(): void
