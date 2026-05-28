@@ -26,8 +26,7 @@ class ScrambleUiServiceProvider extends PackageServiceProvider
 
     public function bootingPackage(): void
     {
-        // 🟢 Listen to the router's booting sequence to guarantee your override registers last
-        $this->app->get(Router::class)->booting(function () {
+        $this->app->booted(function () {
             $this->overrideUiRoute();
         });
     }
