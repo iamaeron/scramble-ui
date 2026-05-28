@@ -14,8 +14,8 @@
         href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap"
         rel="stylesheet">
     <title x-text="spec ? spec.info.title + ' — API Docs' : 'API Docs'">API Docs</title>
-    <link rel="stylesheet" href="{{ asset('vendor/scramble-ui/css/docs.css') }}">
-    <script src="{{ asset('vendor/scramble-ui/js/docs.js') }}" defer></script>
+    <link rel="stylesheet" href="{{ asset('vendor/scramble-ui/app.css') }}">
+    <script src="{{ asset('vendor/scramble-ui/docs.js') }}" defer></script>
     <style>
         .font-spline {
             font-family: "Spline Sans Mono", monospace
