@@ -16,8 +16,8 @@ class ScrambleUiServiceProvider extends PackageServiceProvider
         parent::boot();
 
         $this->publishes([
-            __DIR__ . '/../public/css/docs.css' => public_path('vendor/scramble-ui/css/docs.css'),
-            __DIR__ . '/../public/js/docs.js' => public_path('vendor/scramble-ui/js/docs.js'),
+            $this->package->basePath('/../public/css/docs.css') => public_path('vendor/scramble-ui/css/docs.css'),
+            $this->package->basePath('/../public/js/docs.js') => public_path('vendor/scramble-ui/js/docs.js'),
         ], 'scramble-ui-assets');
     }
 
