@@ -38,6 +38,13 @@ export default defineConfig({
         },
     },
     build: {
+        rollupOptions: {
+            output: {
+                entryFileNames: "js/docs.js",
+                assetFileNames: "css/app.css",
+            },
+        },
         outDir: "resources/dist",
+        copyPublicDir: false,
     },
 });
