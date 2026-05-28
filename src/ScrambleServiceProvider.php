@@ -258,15 +258,6 @@ class ScrambleServiceProvider extends PackageServiceProvider
         });
     }
 
-    public function boot()
-    {
-        // When an end-user runs vendor:publish, Laravel copies your pre-built JS
-        $this->publishes([
-            __DIR__ . '/../public/css/docs.css' => public_path('vendor/scramble/css/docs.css'),
-            __DIR__ . '/../public/js/docs.js' => public_path('vendor/scramble/js/docs.js'),
-        ], 'scramble-assets');
-    }
-
     public function bootingPackage()
     {
         Scramble::configure()
@@ -309,9 +300,7 @@ class ScrambleServiceProvider extends PackageServiceProvider
                 $cb($router, function (Generator $generator) use ($api) {
                     $config = Scramble::getGeneratorConfig($api);
 
-                    // ← point to your custom view
-                    // return view('vendor.scramble.docs', [
-                    return view('vendor.scramble.docs.custom-api', [
+                    return view('vendor.scramble.docs', [
                         'spec' => $generator($config),
                         'config' => $config,
                     ]);
