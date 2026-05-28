@@ -12,14 +12,11 @@ export default defineConfig({
         laravel({
             input: [
                 "resources/css/app.css",
-                "resources/js/app.js",
-                // Use the absolute path for the entry point
                 `${scramblePath}/resources/js/docs.js`,
             ],
             refresh: [
                 "resources/views/**",
                 "routes/**",
-                // 👇 Look at the absolute folder for Blade file changes!
                 `${scramblePath}/resources/views/**`,
             ],
         }),

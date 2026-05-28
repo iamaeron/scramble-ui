@@ -14,7 +14,9 @@
         href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap"
         rel="stylesheet">
     <title x-text="spec ? spec.info.title + ' — API Docs' : 'API Docs'">API Docs</title>
-    @vite(['resources/css/app.css', 'vendor/dedoc/scramble/resources/js/docs.js'])
+    <!-- @vite(['resources/css/app.css', 'vendor/dedoc/scramble/resources/js/docs.js']) -->
+    <link rel="stylesheet" href="{{ asset('vendor/scramble/css/docs.css') }}">
+    <script src="{{ asset('vendor/scramble/js/docs.js') }}" defer></script>
     <style>
         .font-spline {
             font-family: "Spline Sans Mono", monospace
@@ -38,13 +40,41 @@
             </div>
 
             {{-- Search --}}
-            <div class="px-4 py-3 border-b border-zinc-800">
-                <input type="text" x-model="search" placeholder="Search endpoints..."
+            <div class="px-4 py-2 flex items-center border-b border-zinc-800">
+                <input type="text" x-model="search"
+                    :placeholder="schemaNavOpen ? 'Search schemas...' : 'Search endpoints...'"
                     class="w-full bg-zinc-800 text-sm text-zinc-200 placeholder-zinc-500 rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-blue-400" />
             </div>
 
             {{-- Endpoint List --}}
             <nav class="overflow-y-auto flex-1 p-3 space-y-1">
+                {{-- Core Document Navigation --}}
+                <div class="mb-4 space-y-1">
+                    <button @click="setView('overview')"
+                        :class="currentView === 'overview' ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-white'"
+                        class="w-full text-left flex font-sans items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition">
+                        <!-- <svg class="w-5 h-5" :class="currentView === 'overview'
+                                        ? 'text-blue-400 drop-shadow-lg drop-shadow-blue-400/30'
+                                        : 'text-zinc-700 group-hover:text-zinc-500'"  -->
+
+                        <svg class="w-4 h-4" :class="currentView === 'overview'
+                                        ? 'text-blue-400 drop-shadow-lg drop-shadow-blue-400/30'
+                                        : 'text-zinc-700 group-hover:text-zinc-500'" xmlns="http://www.w3.org/2000/svg"
+                            width="64" height="64" color="#0f4159" fill="none" viewBox="0 0 24 24">
+                            <path
+                                d="M12 17.75C12.4142 17.75 12.75 17.4142 12.75 17V11C12.75 10.5858 12.4142 10.25 12 10.25C11.5858 10.25 11.25 10.5858 11.25 11V17C11.25 17.4142 11.5858 17.75 12 17.75Z"
+                                fill="currentColor"></path>
+                            <path
+                                d="M12 7C12.5523 7 13 7.44772 13 8C13 8.55228 12.5523 9 12 9C11.4477 9 11 8.55228 11 8C11 7.44772 11.4477 7 12 7Z"
+                                fill="currentColor"></path>
+                            <path
+                                d="M1.25 12C1.25 6.06294 6.06294 1.25 12 1.25C17.9371 1.25 22.75 6.06294 22.75 12C22.75 17.9371 17.9371 22.75 12 22.75C6.06294 22.75 1.25 17.9371 1.25 12ZM12 2.75C6.89137 2.75 2.75 6.89137 2.75 12C2.75 17.1086 6.89137 21.25 12 21.25C17.1086 21.25 21.25 17.1086 21.25 12C21.25 6.89137 17.1086 2.75 12 2.75Z"
+                                fill="currentColor" fill-rule="evenodd" clip-rule="evenodd"></path>
+                        </svg>
+                        <span>Overview</span>
+                    </button>
+                </div>
+
                 <div class="px-2 flex items-center justify-between mb-2">
                     <h2 class="text-sm font-semibold text-white">ENDPOINTS</h2>
                     <button @click="allOpen = !allOpen"
@@ -61,7 +91,6 @@
                     </button>
                 </div>
 
-
                 <template x-if="!spec">
                     <div class="space-y-2 animate-pulse">
                         <template x-for="i in 6">
@@ -75,7 +104,9 @@
 
                         <button @click="open = !open"
                             class="flex w-full items-center font-sans justify-between rounded px-2 py-1.5 text-sm font-medium text-zinc-300 hover:bg-zinc-800">
-                            <span x-text="tagName"></span>
+                            <div class="flex items-center gap-4">
+                                <span x-text="tagName"></span>
+                            </div>
                             <svg :class="{ 'rotate-90': open }" class="h-4 w-4 transform transition-transform"
                                 fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -83,41 +114,227 @@
                             </svg>
                         </button>
 
-                        <div x-show="open" x-collapse class="pl-3 space-y-1">
+                        <div x-show="open" x-collapse class="pl-1 space-y-1">
                             <template x-for="route in routes" :key="route.path + route.method">
-                                <button @click="selected = { ...route, tagName: tagName }"
-                                    :class="selected?.operationId === route.operationId ? 'bg-zinc-700/50 text-white' :
-                                        'text-zinc-400 hover:bg-zinc-800/60 flex hover:text-white'"
+                                <button @click="selectEndpoint(route, tagName)" :class="selected?.operationId === route.operationId && currentView === 'endpoint' ? 'bg-zinc-700/50 text-white' :
+                                        'text-zinc-500 hover:bg-zinc-800/60 flex hover:text-white'"
                                     class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition">
+                                    <svg :class="selected?.operationId === route.operationId && currentView === 'endpoint' 
+                                        ? 'text-blue-400'
+                                        : 'text-zinc-700 group-hover:text-zinc-500'" xmlns="http://www.w3.org/2000/svg"
+                                        class="w-5 h-5" width="64" height="64" fill="none" viewBox="0 0 24 24">
+                                        <path opacity="0.5"
+                                            d="M19.7165 20.3624C21.143 19.5846 22 18.5873 22 17.5C22 16.3475 21.0372 15.2961 19.4537 14.5C17.6226 13.5794 14.9617 13 12 13C9.03833 13 6.37738 13.5794 4.54631 14.5C2.96285 15.2961 2 16.3475 2 17.5C2 18.6525 2.96285 19.7039 4.54631 20.5C6.37738 21.4206 9.03833 22 12 22C15.1066 22 17.8823 21.3625 19.7165 20.3624Z"
+                                            fill="currentColor"></path>
+                                        <path fill-rule="evenodd" clip-rule="evenodd"
+                                            d="M5 8.51464C5 4.9167 8.13401 2 12 2C15.866 2 19 4.9167 19 8.51464C19 12.0844 16.7658 16.2499 13.2801 17.7396C12.4675 18.0868 11.5325 18.0868 10.7199 17.7396C7.23416 16.2499 5 12.0844 5 8.51464ZM12 11C13.1046 11 14 10.1046 14 9C14 7.89543 13.1046 7 12 7C10.8954 7 10 7.89543 10 9C10 10.1046 10.8954 11 12 11Z"
+                                            fill="currentColor"></path>
+                                    </svg>
+                                    <div class="truncate flex flex-col flex-1">
+                                        <span class="truncate font-mono text-zinc-300 text-xs font-medium"
+                                            x-text="route.path"></span>
+                                        <span class="truncate text-xs"
+                                            x-text="route.summary || route.operationId"></span>
+                                    </div>
                                     <span class="text-xs font-medium uppercase px-2 py-0.5 rounded shrink-0"
                                         :class="methodColor(route.method)" x-text="route.method"></span>
-                                    <span class="truncate font-mono flex-1 text-xs"
-                                        x-text="route.summary || route.operationId"></span>
                                 </button>
                             </template>
                         </div>
 
                     </div>
                 </template>
+
+                <template x-if="spec && search.trim() && Object.keys(filteredRoutes).length === 0">
+                    <p class="text-xs text-zinc-600 px-3 py-2 font-sans italic">No endpoints match your search.</p>
+                </template>
+
+                {{-- Schemas Section --}}
+                <div class="mt-10 space-y-1">
+                    <div class="px-2 flex items-center justify-between mb-2">
+                        <h2 class="text-sm font-semibold text-white">SCHEMAS</h2>
+                        <button @click="schemaNavOpen = !schemaNavOpen"
+                            class="flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-300 transition-colors px-1.5 py-0.5 rounded hover:bg-zinc-800">
+                            <svg :class="{ 'rotate-90': schemaNavOpen }" class="w-3 h-3 transform transition-transform"
+                                fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                            </svg>
+                            <span x-text="schemaNavOpen ? 'Collapse' : 'Expand'"></span>
+                        </button>
+                    </div>
+
+                    <div x-show="schemaNavOpen" x-collapse class="space-y-0.5">
+                        <template x-if="!spec">
+                            <div class="space-y-2 animate-pulse px-1">
+                                <template x-for="i in 4">
+                                    <div class="h-8 bg-zinc-800 rounded-lg"></div>
+                                </template>
+                            </div>
+                        </template>
+
+                        <template x-if="spec?.components?.schemas">
+                            <template x-for="[schemaName] in filteredSchemas" :key="schemaName">
+                                <button @click="selectSchema(schemaName)" :class="selectedSchema === schemaName && currentView === 'schema-detail'
+                                        ? 'bg-zinc-700/50 text-white'
+                                        : 'text-zinc-500 hover:bg-zinc-800/60 hover:text-white'"
+                                    class="w-full group text-left flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition">
+                                    <svg :class="selectedSchema === schemaName && currentView === 'schema-detail'
+                                        ? 'text-blue-400'
+                                        : 'text-zinc-700 group-hover:text-zinc-500'" class="w-5 h-5"
+                                        xmlns="http://www.w3.org/2000/svg" width="64" height="64" color="#3f3f46"
+                                        fill="none" viewBox="0 0 24 24">
+                                        <path
+                                            d="M12 10C16.4183 10 20 8.20914 20 6C20 3.79086 16.4183 2 12 2C7.58172 2 4 3.79086 4 6C4 8.20914 7.58172 10 12 10Z"
+                                            fill="currentColor"></path>
+                                        <path opacity="0.5"
+                                            d="M4 12V18C4 20.2091 7.58172 22 12 22C16.4183 22 20 20.2091 20 18V12C20 14.2091 16.4183 16 12 16C7.58172 16 4 14.2091 4 12Z"
+                                            fill="currentColor"></path>
+                                        <path opacity="0.7"
+                                            d="M4 6V12C4 14.2091 7.58172 16 12 16C16.4183 16 20 14.2091 20 12V6C20 8.20914 16.4183 10 12 10C7.58172 10 4 8.20914 4 6Z"
+                                            fill="currentColor"></path>
+                                    </svg>
+                                    <span class="truncate font-mono text-sm" x-text="schemaName"></span>
+                                </button>
+                            </template>
+                        </template>
+
+                        <template x-if="spec?.components?.schemas && filteredSchemas.length === 0">
+                            <p class="text-xs text-zinc-600 px-3 py-2 font-sans italic">No schemas match your search.
+                            </p>
+                        </template>
+                    </div>
+                </div>
             </nav>
+
         </aside>
 
         {{-- Main Panel --}}
-        <main class="flex-1 overflow-y-auto bg-zinc-950">
+        <main x-effect="(selected || selectedSchema) && $el.scrollTo({ top: 0 })"
+            class="flex-1 overflow-y-auto bg-zinc-950">
 
-            {{-- Empty state --}}
-            <template x-if="!selected">
-                <div class="flex flex-col items-center justify-center h-full text-zinc-600 gap-3">
-                    <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0119 9.414V19a2 2 0 01-2 2z" />
-                    </svg>
-                    <p class="text-sm">Select an endpoint to view details</p>
+            {{-- 1. OVERVIEW VIEW --}}
+            <template x-if="currentView === 'overview'">
+                <div class="pt-16 px-8 max-w-4xl mx-auto w-full space-y-8">
+                    <div>
+                        <h1 class="text-white text-3xl font-spline font-bold tracking-tight" x-text="spec?.info?.title">
+                        </h1>
+                        <div class="flex items-center gap-3 mt-2">
+                            <span
+                                class="bg-indigo-500/10 text-indigo-400 text-sm border border-indigo-500/30 px-2.5 py-0.5 rounded-lg font-mono"
+                                x-text="'Version ' + spec?.info?.version"></span>
+                            <span class="text-zinc-500 text-sm font-sans">OpenAPI 3.0</span>
+                        </div>
+                    </div>
+
+                    <hr class="border-zinc-800" />
+
+                    <div class="prose prose-invert max-w-none">
+                        <p class="text-zinc-400 font-sans text-base leading-relaxed whitespace-pre-line"
+                            x-text="spec?.info?.description"></p>
+                    </div>
+
+                    {{-- Servers List --}}
+                    <section class="space-y-4">
+                        <h3 class="text-sm font-medium font-spline text-zinc-200 tracking-wider uppercase">Base
+                            Environment Paths</h3>
+                        <div class="space-y-2.5">
+                            <template x-for="server in spec?.servers" :key="server.url">
+                                <div
+                                    class="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-zinc-950 border border-zinc-800 rounded-lg gap-2">
+                                    <code class="text-blue-400 text-sm font-mono break-all" x-text="server.url"></code>
+                                    <span class="text-zinc-500 text-xs fon-medium font-sans"
+                                        x-text="server.description || 'Primary Base Route'"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </section>
                 </div>
             </template>
 
-            {{-- Endpoint Detail --}}
-            <template x-if="selected">
+            {{-- 2. SCHEMA DETAIL VIEW --}}
+            <template
+                x-if="currentView === 'schema-detail' && selectedSchema && spec?.components?.schemas?.[selectedSchema]">
+                <div class="pt-16 px-8 max-w-4xl mx-auto w-full pb-20">
+                    <div x-data="{
+                        get schemaData() {
+                            return spec?.components?.schemas?.[selectedSchema] ?? null;
+                        }
+                    }">
+                        {{-- Breadcrumb --}}
+                        <div class="flex items-center gap-2 text-sm text-zinc-500 font-sans mb-6">
+                            <span>Schemas</span>
+                            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                            </svg>
+                            <span class="text-zinc-400" x-text="selectedSchema"></span>
+                        </div>
+
+                        {{-- Header --}}
+                        <div class="mb-8">
+                            <div class="flex items-baseline gap-3">
+                                <h1 class="text-white text-2xl font-spline font-bold" x-text="selectedSchema"></h1>
+                                <span class="text-xs font-mono text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded"
+                                    x-text="schemaData?.type ?? 'object'"></span>
+                            </div>
+                            <p class="text-zinc-500 text-sm font-sans mt-2" x-show="schemaData?.description"
+                                x-text="schemaData?.description"></p>
+                        </div>
+
+                        <!-- <hr class="border-zinc-800 mb-8" /> -->
+
+                        {{-- Properties --}}
+                        <template x-if="schemaData?.properties">
+                            <div class="space-y-4">
+                                <div class="flex items-baseline gap-2 mb-4">
+                                    <h2 class="text-sm font-semibold font-sans text-zinc-300 tracking-wider">
+                                        Properties</h2>
+                                    <span class="text-sm font-mono text-zinc-600"
+                                        x-text="Object.keys(schemaData.properties).length + ' fields'"></span>
+                                </div>
+                                <div class="p-4 bg-zinc-950/60 rounded-lg border border-zinc-900">
+                                    <p class="text-xs text-zinc-600 font-medium font-sans mb-3">object {</p>
+                                    <div class="space-y-1 pl-2">
+                                        <template
+                                            x-for="[fieldName, fieldDetails] in Object.entries(schemaData.properties)"
+                                            :key="fieldName">
+                                            <div
+                                                x-html="renderFieldRow(fieldName, fieldDetails, schemaData?.required?.includes(fieldName))">
+                                            </div>
+                                        </template>
+                                    </div>
+                                    <p class="text-xs text-zinc-600 font-medium font-sans mt-3">}</p>
+                                </div>
+                            </div>
+                        </template>
+
+                        {{-- No properties fallback --}}
+                        <template x-if="!schemaData?.properties">
+                            <div
+                                class="bg-zinc-900/20 border border-zinc-800 rounded-xl p-6 text-zinc-500 font-sans text-sm italic">
+                                This schema has no declared properties.
+                                <span x-show="schemaData?.type" x-text="' Type: ' + schemaData?.type"></span>
+                            </div>
+                        </template>
+
+                        {{-- Required fields summary --}}
+                        <!-- <template x-if="schemaData?.required?.length">
+                            <div class="mt-6 flex flex-wrap gap-2 items-center">
+                                <span
+                                    class="text-xs font-sans text-zinc-600 uppercase tracking-wider mr-1">Required:</span>
+                                <template x-for="req in schemaData.required" :key="req">
+                                    <span
+                                        class="text-xs font-mono text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2 py-0.5 rounded"
+                                        x-text="req"></span>
+                                </template>
+                            </div>
+                        </template> -->
+                    </div>
+                </div>
+            </template>
+
+
+            {{-- 3. ENDPOINT DETAILS VIEW --}}
+            <template x-if="currentView === 'endpoint' && selected">
                 <div class="pt-18 px-6 max-w-7xl mx-auto w-full">
                     {{-- Title --}}
                     <div>
@@ -182,9 +399,6 @@
                                                             </template>
                                                         </div>
                                                     </div>
-
-                                                    {{-- <span x-show="p.required"
-                                                        class="text-xs text-amber-400 font-medium">required</span> --}}
                                                 </div>
                                             </template>
                                         </div>
@@ -210,8 +424,6 @@
                                                             <code x-text="p.name"
                                                                 class="text-sm text-blue-400 bg-zinc-900/50 border border-zinc-800/60 rounded-md px-1.5 py-0.5"></code>
                                                         </div>
-                                                        {{-- <span class="text-xs bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded"
-                                                    x-text="p.in"></span> --}}
                                                         <span x-show="p.required"
                                                             class="text-sm text-amber-400 font-sans font-medium">required</span>
                                                     </div>
@@ -242,8 +454,6 @@
                                                             <code x-text="p.name"
                                                                 class="text-sm text-blue-400 bg-zinc-900/50 border border-zinc-800/60 rounded-md px-1.5 py-0.5"></code>
                                                         </div>
-                                                        {{-- <span class="text-xs bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded"
-                                                    x-text="p.in"></span> --}}
                                                         <span x-show="p.required"
                                                             class="text-sm text-amber-400 font-sans font-medium">required</span>
                                                     </div>
@@ -264,7 +474,7 @@
                                         Body
                                     </h2>
                                     <div x-data="{ currentSchema: null }"
-                                        x-effect="currentSchema = resolveSchema(selected?.requestBody?.content?.['application/json']?.schema)">
+                                        x-effect="currentSchema = resolveSchema(selected?.requestBody?.content?.['application/json']?.schema); if(currentSchema?.properties) { Object.keys(currentSchema.properties).forEach(key => { if(!(key in bodyParams)) bodyParams[key] = ''; }); }">
                                         <ul>
                                             <template x-for="(fieldDetails, fieldName) in currentSchema?.properties"
                                                 :key="fieldName">
@@ -281,7 +491,6 @@
                                                             </div>
                                                         </template>
 
-                                                        {{-- 3. String Length Rules (Min/Max) --}}
                                                         <template
                                                             x-if="fieldDetails.type === 'string' && fieldDetails.minLength !== undefined">
                                                             <div class="px-1.5 py-0.5 text-xs font-mono bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded"
@@ -293,7 +502,6 @@
                                                                 x-text="'max:' + fieldDetails.maxLength"></div>
                                                         </template>
 
-                                                        {{-- 4. Numeric Rule Constraints (Gt/Lt/Min/Max) --}}
                                                         <template
                                                             x-if="(fieldDetails.type === 'integer' || fieldDetails.type === 'number') && fieldDetails.minimum !== undefined">
                                                             <div class="px-1.5 py-0.5 text-xs font-mono bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded"
@@ -307,7 +515,6 @@
                                                             </div>
                                                         </template>
 
-                                                        {{-- 5. Format/Pattern Type Rule Badge --}}
                                                         <template x-if="fieldDetails.format">
                                                             <div class="px-1.5 py-0.5 text-xs font-mono bg-zinc-800 text-zinc-400 border border-zinc-700/50 rounded"
                                                                 x-text="'format:' + fieldDetails.format"></div>
@@ -331,8 +538,7 @@
                                         <div class="flex mb-4 space-x-2">
                                             <template x-for="(responseDetails, statusCode) in selected?.responses"
                                                 :key="statusCode">
-                                                <button @click="currentTab = statusCode" type="button"
-                                                    :class="currentTab === statusCode ?
+                                                <button @click="currentTab = statusCode" type="button" :class="currentTab === statusCode ?
                                                         'bg-zinc-900/50 text-zinc-200 font-semibold border-zinc-800/50' :
                                                         'border-transparent text-zinc-500 hover:text-zinc-600'"
                                                     class="py-1.5 px-4 border rounded-lg text-sm transition-all focus:outline-none flex items-center space-x-1.5">
@@ -347,8 +553,8 @@
                                         <template x-for="(responseDetails, statusCode) in selected?.responses"
                                             :key="statusCode">
                                             <div x-show.immediate="currentTab === statusCode"
-                                                :key="statusCode + '_' + activeVariantIndex" x-data="{ responseSchema: null }"
-                                                x-effect="if (currentTab === statusCode) { 
+                                                :key="statusCode + '_' + activeVariantIndex"
+                                                x-data="{ responseSchema: null }" x-effect="if (currentTab === statusCode) { 
              responseSchema = resolveSchema(responseDetails?.content?.['application/json']?.schema || responseDetails); 
          }">
 
@@ -364,8 +570,7 @@
                                                                 Variant:</span>
                                                             <template x-for="(variant, idx) in responseSchema.variants"
                                                                 :key="idx">
-                                                                <button @click="activeVariantIndex = idx"
-                                                                    type="button"
+                                                                <button @click="activeVariantIndex = idx" type="button"
                                                                     :class="activeVariantIndex === idx ?
                                                                         'bg-indigo-500/10 text-indigo-300 border-indigo-500/20 font-semibold shadow-sm' :
                                                                         'text-zinc-600 border-transparent hover:bg-zinc-800/70 hover:text-zinc-400'"
@@ -429,9 +634,6 @@
 
                         </div>
 
-                        {{-- <div class="flex-1">
-                            Hey
-                        </div> --}}
                         {{-- Try It Panel --}}
                         <div class="w-96 shrink-0 flex flex-col gap-10">
                             <div class="w-full" x-data="{
@@ -470,13 +672,11 @@
                                     this.responseStatus = null;
                                     this.responseTime = null;
                             
-                                    // Detect path and query params
                                     for (const p of (selected?.parameters ?? [])) {
                                         if (p.in === 'path') this.pathParams[p.name] = '';
                                         else if (p.in === 'query') this.queryParams[p.name] = '';
                                     }
                             
-                                    // Initialize Request Body fields safely
                                     const bodySchema = this.resolveSchema(selected?.requestBody?.content?.['application/json']?.schema);
                                     if (bodySchema?.properties) {
                                         for (const key of Object.keys(bodySchema.properties)) {
@@ -484,13 +684,10 @@
                                         }
                                     }
                             
-                                    // DYNAMIC AUTH: Automatically scan endpoint specs for headers or establish fallback tokens
                                     const headers = (selected?.parameters ?? []).filter(p => p.in === 'header');
                             
-                                    // Check if a CSRF Header or generic Bearer validation exists, pre-populating defaults
                                     const hasCsrfRequirement = headers.some(p => p.name.toLowerCase().includes('csrf') || p.name.toLowerCase().includes('xsrf'));
                                     if (hasCsrfRequirement && !this.token) {
-                                        // Try to pull an active Sanctum/Laravel cookie token value locally if present
                                         const match = document.cookie.match(new RegExp('(^| )XSRF-TOKEN=([^;]+)'));
                                         if (match) this.token = decodeURIComponent(match[2]);
                                     }
@@ -504,23 +701,17 @@
                                     const start = performance.now();
                             
                                     try {
-                                        // 1. Replicating Axios defaults: Set base JSON acceptance headers
                                         const headers = {
                                             'Accept': 'application/json',
-                                            // CRITICAL FOR LARAVEL: Tells the server this is an AJAX/Fetch request
                                             'X-Requested-With': 'XMLHttpRequest'
                                         };
                             
-                                        // 2. Replicating Axios XSRF extraction:
-                                        // Automatically scan browser cookies for Laravel's token, exactly like Axios does
                                         const match = document.cookie.match(new RegExp('(^| )XSRF-TOKEN=([^;]+)'));
                                         if (match) {
                                             const decodedToken = decodeURIComponent(match[2]);
                             
-                                            // Replicating Axios 'xsrfHeaderName': Inject the header automatically
                                             headers['X-XSRF-TOKEN'] = decodedToken;
                             
-                                            // Also map it across any custom header inputs expected by the schema documentation
                                             for (const p of (selected?.parameters ?? [])) {
                                                 if (p.in === 'header' && (p.name.toLowerCase().includes('csrf') || p.name.toLowerCase().includes('xsrf'))) {
                                                     headers[p.name] = decodedToken;
@@ -528,22 +719,16 @@
                                             }
                                         }
                             
-                                        // If you are also using standard JWT token authentication fallbacks
                                         if (this.token && !match) {
                                             headers['Authorization'] = `Bearer ${this.token}`;
                                         }
                             
-                                        // 3. Process application payload requirements
                                         const hasBody = selected?.method?.toUpperCase() !== 'GET' && selected?.requestBody;
                                         if (hasBody) headers['Content-Type'] = 'application/json';
                             
                                         const opts = {
                                             method: selected.method.toUpperCase(),
                                             headers: headers,
-                            
-                                            // =========================================================================
-                                            // CRITICAL: THIS IS THE EXACT NATIVE EQUIVALENT TO axios.withCredentials = true
-                                            // =========================================================================
                                             credentials: 'include'
                                         };
                             
@@ -573,13 +758,10 @@
                                     }
                                 },
                             
-                                // UTILITY METHOD: Smoothly hits the backend cookie sanitization routes to reset cross-site states
                                 async refreshCsrfToken() {
                                     try {
-                                        // Automatically targets standard web cookie endpoints (Sanctum/Web scopes)
                                         await fetch('/sanctum/csrf-cookie', { method: 'GET', credentials: 'include' });
                             
-                                        // Re-read and apply cookie matching sequences instantly
                                         const match = document.cookie.match(new RegExp('(^| )XSRF-TOKEN=([^;]+)'));
                                         if (match) {
                                             this.token = decodeURIComponent(match[2]);
@@ -604,17 +786,16 @@
                                         <h2 class="text-sm font-semibold text-white font-sans">Try it</h2>
                                         <button @click="send()" :disabled="loading"
                                             class="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-semibold px-3 py-1.5 rounded-md font-sans transition-colors">
-                                            <svg x-show="!loading" class="w-3 h-3" fill="none"
-                                                viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                            <svg x-show="!loading" class="w-3 h-3" fill="none" viewBox="0 0 24 24"
+                                                stroke="currentColor" stroke-width="2.5">
                                                 <path stroke-linecap="round" stroke-linejoin="round"
                                                     d="M5 3l14 9-14 9V3z" />
                                             </svg>
                                             <svg x-show="loading" class="w-3 h-3 animate-spin" fill="none"
                                                 viewBox="0 0 24 24">
-                                                <circle class="opacity-25" cx="12" cy="12" r="10"
-                                                    stroke="currentColor" stroke-width="4" />
-                                                <path class="opacity-75" fill="currentColor"
-                                                    d="M4 12a8 8 0 018-8v8z" />
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                                    stroke-width="4" />
+                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
                                             </svg>
                                             <span x-text="loading ? 'Sending...' : 'Send'"></span>
                                         </button>
@@ -626,22 +807,18 @@
 
                                     {{-- Bearer token --}}
                                     <div x-show="selected">
-                                        <label class="block text-xs mb-1 font-medium transition-colors"
-                                            :class="selected?.parameters?.some(p => p.in === 'header' && (p.name
+                                        <label class="block text-xs mb-1 font-medium transition-colors" :class="selected?.parameters?.some(p => p.in === 'header' && (p.name
                                                     .toLowerCase()
                                                     .includes('csrf') || p.name.toLowerCase().includes('xsrf'))) ?
-                                                'text-indigo-400' : 'text-zinc-500'"
-                                            x-text="selected?.parameters?.some(p => p.in === 'header' && (p.name.toLowerCase().includes('csrf') || p.name.toLowerCase().includes('xsrf'))) 
+                                                'text-indigo-400' : 'text-zinc-500'" x-text="selected?.parameters?.some(p => p.in === 'header' && (p.name.toLowerCase().includes('csrf') || p.name.toLowerCase().includes('xsrf'))) 
                 ? 'Active Session / CSRF Token' 
                 : 'Bearer Authentication Token'">
                                         </label>
 
                                         <div class="relative flex items-center">
-                                            <input
-                                                :type="selected?.parameters?.some(p => p.in === 'header' && (p.name
+                                            <input :type="selected?.parameters?.some(p => p.in === 'header' && (p.name
                                                     .toLowerCase().includes('csrf') || p.name.toLowerCase()
-                                                    .includes('xsrf'))) ? 'text' : 'password'"
-                                                x-model="token"
+                                                    .includes('xsrf'))) ? 'text' : 'password'" x-model="token"
                                                 :placeholder="selected?.parameters?.some(p => p.in === 'header' && (p.name
                                                         .toLowerCase().includes('csrf') || p.name.toLowerCase()
                                                         .includes('xsrf'))) ?
@@ -654,7 +831,6 @@
                                                     'border-indigo-950/60 focus:border-indigo-500/50 text-indigo-300' :
                                                     'border-zinc-800 focus:border-indigo-500 text-zinc-200'" />
 
-                                            {{-- Small indicator showing if a token value is actively filled --}}
                                             <div class="absolute right-2.5 flex items-center pointer-events-none">
                                                 <span class="w-1.5 h-1.5 rounded-full"
                                                     :class="token ? 'bg-green-500' : 'bg-zinc-700'"></span>
@@ -664,12 +840,10 @@
 
                                     {{-- Tabs: Params / Body --}}
                                     <div class="flex border-b border-zinc-800 text-xs">
-                                        <button @click="activeTab = 'params'"
-                                            :class="activeTab === 'params' ? 'border-indigo-500 text-indigo-400' :
+                                        <button @click="activeTab = 'params'" :class="activeTab === 'params' ? 'border-indigo-500 text-indigo-400' :
                                                 'border-transparent text-zinc-500 hover:text-zinc-300'"
                                             class="px-3 py-1.5 border-b-2 transition-colors font-medium">Params</button>
-                                        <button @click="activeTab = 'body'"
-                                            :class="activeTab === 'body' ? 'border-indigo-500 text-indigo-400' :
+                                        <button @click="activeTab = 'body'" :class="activeTab === 'body' ? 'border-indigo-500 text-indigo-400' :
                                                 'border-transparent text-zinc-500 hover:text-zinc-300'"
                                             class="px-3 py-1.5 border-b-2 transition-colors font-medium"
                                             x-show="selected?.requestBody">Body</button>
@@ -687,8 +861,7 @@
                                                     <div>
                                                         <label class="block text-xs text-zinc-400 mb-1 font-mono"
                                                             x-text="key"></label>
-                                                        <input type="text" x-model="pathParams[key]"
-                                                            :placeholder="key"
+                                                        <input type="text" x-model="pathParams[key]" :placeholder="key"
                                                             class="w-full bg-zinc-900 border border-zinc-800 focus:border-indigo-500 text-zinc-200 text-xs rounded-md px-3 py-1.5 outline-none transition-colors placeholder-zinc-600" />
                                                     </div>
                                                 </template>
@@ -704,8 +877,7 @@
                                                     <div>
                                                         <label class="block text-xs text-zinc-400 mb-1 font-mono"
                                                             x-text="key"></label>
-                                                        <input type="text" x-model="queryParams[key]"
-                                                            :placeholder="key"
+                                                        <input type="text" x-model="queryParams[key]" :placeholder="key"
                                                             class="w-full bg-zinc-900 border border-zinc-800 focus:border-indigo-500 text-zinc-200 text-xs rounded-md px-3 py-1.5 outline-none transition-colors placeholder-zinc-600" />
                                                     </div>
                                                 </template>
@@ -727,8 +899,7 @@
                                                     <div>
                                                         <label class="block text-xs text-zinc-400 mb-1 font-mono"
                                                             x-text="key"></label>
-                                                        <input type="text" x-model="bodyParams[key]"
-                                                            :placeholder="key"
+                                                        <input type="text" x-model="bodyParams[key]" :placeholder="key"
                                                             class="w-full bg-zinc-900 border border-zinc-800 focus:border-indigo-500 text-zinc-200 text-xs rounded-md px-3 py-1.5 outline-none transition-colors placeholder-zinc-600" />
                                                     </div>
                                                 </template>
@@ -742,11 +913,9 @@
                                             <div class="flex items-center justify-end gap-2">
                                                 <span class="w-2 h-2 rounded-full"
                                                     :class="statusBgColor(currentTab)"></span>
-                                                <span class="text-xs font-semibold"
-                                                    :class="statusColor(responseStatus)"
+                                                <span class="text-xs font-semibold" :class="statusColor(responseStatus)"
                                                     x-text="responseStatus"></span>
-                                                <span class="text-xs text-zinc-600"
-                                                    x-text="responseTime + 'ms'"></span>
+                                                <span class="text-xs text-zinc-600" x-text="responseTime + 'ms'"></span>
                                             </div>
 
                                             <template x-if="highlightedApiResp">
@@ -760,9 +929,8 @@
                                 </div>
                             </div>
 
-                            {{-- Dynamic Response Example Card Container --}}
-                            <div"
-                                class="border border-zinc-800 bg-zinc-950 rounded-lg w-full overflow-hidden font-mono"
+                            {{-- Response Example --}}
+                            <div class="border border-zinc-800 bg-zinc-950 rounded-lg w-full overflow-hidden font-mono"
                                 x-show="generateResponseExample()">
                                 <div
                                     class="flex items-center justify-between px-4 py-2 border-b border-zinc-800 bg-zinc-900/50 select-none">
@@ -773,50 +941,47 @@
                                             x-text="currentTab"></span>
                                     </div>
                                 </div>
-                                <div
-                                    class="p-4 overflow-x-auto max-h-[350px] scrollbar-thin scrollbar-thumb-zinc-800 text-xs shiki-code-wrapper">
+                                <div class="p-4 overflow-x-auto max-h-[350px] text-xs shiki-code-wrapper">
                                     <template x-if="highlightedJson">
                                         <div x-html="highlightedJson" class="leading-relaxed [&>pre]:bg-transparent!">
                                         </div>
                                     </template>
                                     <template x-if="!highlightedJson">
-                                        <pre class="text-zinc-600 font-mono"><code>Generating playground syntax tree...</code></pre>
+                                        <pre
+                                            class="text-zinc-600 font-mono"><code>Generating playground syntax tree...</code></pre>
                                     </template>
                                 </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-    </div>
-    </template>
-    </main>
+            </template>
+        </main>
 
-
-    {{-- Floating CSRF Cookie Utilities --}}
-    <div class="fixed bottom-6 right-6 z-50 flex items-center space-x-2 animate-fade-in" x-show="selected">
-        <button
-            @click="if (window.initParams) refreshCsrfToken(); else { 
-                // Fallback direct discovery fallback trigger matching global scope bindings
-                fetch('/sanctum/csrf-cookie', { credentials: 'include' }).then(() => {
-                    const match = document.cookie.match(new RegExp('(^| )XSRF-TOKEN=([^;]+)'));
-                    if (match && selected) {
-                        const tokenInput = document.querySelector('input[type=\'password\']');
-                        if (tokenInput) {
-                            tokenInput.value = decodeURIComponent(match[2]);
-                            tokenInput.dispatchEvent(new Event('input'));
+        {{-- Floating Cookie Sync Bar --}}
+        <div class="fixed bottom-6 right-6 z-50 flex items-center space-x-2 animate-fade-in"
+            x-show="currentView === 'endpoint'">
+            <button @click="if (window.initParams) refreshCsrfToken(); else { 
+                    fetch('/sanctum/csrf-cookie', { credentials: 'include' }).then(() => {
+                        const match = document.cookie.match(new RegExp('(^| )XSRF-TOKEN=([^;]+)'));
+                        if (match && selected) {
+                            const tokenInput = document.querySelector('input[type=\'password\']');
+                            if (tokenInput) {
+                                tokenInput.value = decodeURIComponent(match[2]);
+                                tokenInput.dispatchEvent(new Event('input'));
+                            }
                         }
-                    }
-                });
-            }"
-            type="button" title="Refresh CSRF Cookie State"
-            class="group flex items-center space-x-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 hover:border-zinc-700 px-3 py-2 rounded-lg text-xs font-mono transition-all shadow-xl active:scale-95">
-            <svg class="w-3.5 h-3.5 text-indigo-400 group-hover:rotate-180 transition-transform duration-300"
-                fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.253 8H18" />
-            </svg>
-            <span>Sync Session Cookies</span>
-        </button>
-    </div>
+                    });
+                }" type="button" title="Refresh CSRF Cookie State"
+                class="group flex items-center space-x-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 hover:border-zinc-700 px-3 py-2 rounded-lg text-xs font-mono transition-all shadow-xl active:scale-95">
+                <svg class="w-3.5 h-3.5 text-indigo-400 group-hover:rotate-180 transition-transform duration-300"
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.253 8H18" />
+                </svg>
+                <span>Sync Session Cookies</span>
+            </button>
+        </div>
     </div>
 
     <script>
@@ -825,13 +990,18 @@
                 spec: null,
                 selected: null,
                 search: '',
-                allOpen: true,
+                allOpen: false,
                 groupedRoutes: {},
                 activeVariantIndex: 0,
                 currentTab: '',
                 highlighter: null,
                 highlightedJson: '',
                 highlightedApiResp: '',
+                selectedSchema: null,
+                schemaNavOpen: true,
+
+                // Track current active core page view layout
+                currentView: 'overview', // 'overview' | 'schema-detail' | 'endpoint'
 
                 async init() {
                     try {
@@ -850,13 +1020,30 @@
                         this.spec = await res.json();
 
                         this.groupRoutesByTags();
-                        console.log(this.spec)
-
-                        this.updateShikiHighlight(this.generateResponseExample())
+                        this.updateShikiHighlight(this.generateResponseExample());
                     } catch (e) {
                         console.error("Failed loading OpenAPI specifications:", e);
                     }
+                },
 
+                // Helper to change between Overview and global Schemas pages
+                setView(viewName) {
+                    this.selected = null;
+                    this.selectedSchema = null;
+                    this.currentView = viewName;
+                },
+
+                // Navigate to a specific schema detail page
+                selectSchema(schemaName) {
+                    this.selected = null;
+                    this.selectedSchema = schemaName;
+                    this.currentView = 'schema-detail';
+                },
+
+                // Helper to change state view focus specifically to an endpoint panel
+                selectEndpoint(route, tagName) {
+                    this.selected = { ...route, tagName: tagName };
+                    this.currentView = 'endpoint';
                 },
 
                 updateShikiHighlight(rawJson, resp = false) {
@@ -866,7 +1053,6 @@
                     }
 
                     if (this.highlighter) {
-
                         if (resp) {
                             this.highlightedApiResp = this.highlighter.codeToHtml(rawJson, {
                                 lang: 'json',
@@ -892,7 +1078,6 @@
 
                     const rawSchema = Alpine.raw(schema);
 
-                    // 0. Handle allOf — merge all sub-schemas into one flat object schema
                     if (rawSchema.allOf && Array.isArray(rawSchema.allOf)) {
                         let mergedProperties = {};
                         let mergedRequired = [];
@@ -919,11 +1104,8 @@
                         }
                     }
 
-                    // 1. Detect Root Polymorphic Variants (anyOf / oneOf)
                     if (rawSchema.anyOf && Array.isArray(rawSchema.anyOf)) {
-                        // Map out every independent response structure variant cleanly
                         const variants = rawSchema.anyOf.map(subSchema => {
-                            // Bypass any nested ref links or wrappers inside individual variants
                             return this.resolveSchema(subSchema);
                         }).filter(Boolean);
 
@@ -933,12 +1115,9 @@
                                 variants: variants
                             };
                         }
-
-                        // Fallback if there's only 1 valid sub-schema anyway
                         return variants[0] || null;
                     }
 
-                    // 2. Handle $ref pointers
                     if (rawSchema.$ref) {
                         const pathParts = rawSchema.$ref.replace('#/', '').split('/');
                         let current = Alpine.raw(this.spec);
@@ -953,7 +1132,6 @@
                         return this.resolveSchema(current);
                     }
 
-                    // 3. Handle global Response component wrappers
                     if (rawSchema.content?.['application/json']?.schema) {
                         return this.resolveSchema(rawSchema.content['application/json'].schema);
                     }
@@ -1039,7 +1217,6 @@
                     const hasChildren = rawResolved.properties || (type === 'array' && rawResolved.items) || (type ===
                         'array' && rawResolved.prefixItems);
 
-                    // Format the enum options into a tag list if they exist
                     let enumValueHtml = '';
                     if (rawResolved.enum && Array.isArray(rawResolved.enum)) {
                         enumValueHtml = `
@@ -1066,12 +1243,10 @@
         </div>
     `;
 
-                    // Object depth execution
                     if (rawResolved.properties) {
                         let childHtml = '';
                         for (const [childName, childDetails] of Object.entries(rawResolved.properties)) {
                             const childRequired = rawResolved.required?.includes(childName);
-                            // Resolve any $ref on the child before rendering so nested refs display correctly
                             const resolvedChild = this.resolveSchema(childDetails) ?? childDetails;
                             childHtml += this.renderFieldRow(childName, resolvedChild, childRequired, depth + 1);
                         }
@@ -1086,7 +1261,6 @@
         `;
                     }
 
-                    // Array depth execution — supports both `items` (OAS 3.0) and `prefixItems` (OAS 3.1 tuples)
                     else if (type === 'array' && (rawResolved.items || rawResolved.prefixItems)) {
                         const isTuple = !!rawResolved.prefixItems;
                         const itemSources = isTuple ? rawResolved.prefixItems : [rawResolved.items];
@@ -1099,7 +1273,6 @@
                             if (rawItemSchema && rawItemSchema.properties) {
                                 for (const [childName, childDetails] of Object.entries(rawItemSchema.properties)) {
                                     const childRequired = rawItemSchema.required?.includes(childName);
-                                    // Resolve any $ref on child before rendering
                                     const resolvedChild = this.resolveSchema(childDetails) ?? childDetails;
                                     childHtml += this.renderFieldRow(childName, resolvedChild, childRequired, depth + 1);
                                 }
@@ -1143,15 +1316,13 @@
                     const filtered = {};
 
                     Object.entries(this.groupedRoutes).forEach(([tagName, routes]) => {
-                        // Filter the routes inside this specific tag group
                         const matchingRoutes = routes.filter(route => {
                             return route.path.toLowerCase().includes(query) ||
-                                route.summary && route.summary.toLowerCase().includes(query) ||
-                                route.method.toLowerCase().includes(
-                                    query); // Optional: match GET, POST, etc.
+                                (route.summary && route.summary.toLowerCase().includes(query)) ||
+                                route.method.toLowerCase().includes(query) ||
+                                tagName.toLowerCase().includes(query);
                         });
 
-                        // Only add the tag group to the final result if it has matching routes
                         if (matchingRoutes.length > 0) {
                             filtered[tagName] = matchingRoutes;
                         }
@@ -1160,6 +1331,24 @@
                     return filtered;
                 },
 
+                get filteredSchemas() {
+                    const schemas = this.spec?.components?.schemas;
+                    if (!schemas) return [];
+
+                    const entries = Object.entries(schemas);
+
+                    if (!this.search.trim()) {
+                        return entries;
+                    }
+
+                    const query = this.search.toLowerCase().trim();
+                    return entries.filter(([name, details]) => {
+                        return name.toLowerCase().includes(query) ||
+                            (details.description && details.description.toLowerCase().includes(query)) ||
+                            (details.type && details.type.toLowerCase().includes(query)) ||
+                            (details.properties && Object.keys(details.properties).some(k => k.toLowerCase().includes(query)));
+                    });
+                },
 
                 methodColor(method) {
                     return {
@@ -1168,7 +1357,7 @@
                         put: 'bg-amber-400/10 text-amber-300',
                         patch: 'bg-orange-400/10 text-orange-300',
                         delete: 'bg-red-400/10 text-red-300',
-                    } [method.toLowerCase()] ?? 'bg-zinc-600';
+                    }[method.toLowerCase()] ?? 'bg-zinc-600';
                 },
 
                 statusBgColor(code) {
@@ -1183,7 +1372,6 @@
 
                     Object.entries(this.spec.paths).forEach(([pathName, methods]) => {
                         Object.entries(methods).forEach(([methodName, details]) => {
-
                             const routeTags = details.tags && details.tags.length > 0 ? details.tags : [
                                 'General'
                             ];
@@ -1211,7 +1399,6 @@
             };
         }
     </script>
-
 </body>
 
 </html>

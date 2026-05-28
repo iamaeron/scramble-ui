@@ -121,7 +121,7 @@ class ScrambleServiceProvider extends PackageServiceProvider
 
         $this->app->singleton(Index::class, function () {
             $index = new Index;
-            foreach ((require __DIR__.'/../dictionaries/classMap.php') ?: [] as $className => $serializedClassDefinition) {
+            foreach ((require __DIR__ . '/../dictionaries/classMap.php') ?: [] as $className => $serializedClassDefinition) {
                 $index->classesDefinitions[$className] = unserialize($serializedClassDefinition);
             }
 
@@ -150,7 +150,7 @@ class ScrambleServiceProvider extends PackageServiceProvider
 
                 $inferExtensionsClasses = array_values(array_filter(
                     $extensions,
-                    fn ($e) => is_a($e, InferExtension::class, true),
+                    fn($e) => is_a($e, InferExtension::class, true),
                 ));
 
                 $inferExtensionsClasses = array_merge($inferExtensionsClasses, [
@@ -202,7 +202,7 @@ class ScrambleServiceProvider extends PackageServiceProvider
 
                 $indexBuilders = array_values(array_filter(
                     $extensions,
-                    fn ($e) => is_a($e, IndexBuilder::class, true),
+                    fn($e) => is_a($e, IndexBuilder::class, true),
                 ));
 
                 return array_map(function ($class) {
@@ -215,12 +215,12 @@ class ScrambleServiceProvider extends PackageServiceProvider
 
             $typesToSchemaExtensions = array_values(array_filter(
                 $extensions,
-                fn ($e) => is_a($e, TypeToSchemaExtension::class, true),
+                fn($e) => is_a($e, TypeToSchemaExtension::class, true),
             ));
 
             $exceptionToResponseExtensions = array_values(array_filter(
                 $extensions,
-                fn ($e) => is_a($e, ExceptionToResponseExtension::class, true),
+                fn($e) => is_a($e, ExceptionToResponseExtension::class, true),
             ));
 
             return new TypeTransformer(
@@ -258,6 +258,15 @@ class ScrambleServiceProvider extends PackageServiceProvider
         });
     }
 
+    public function boot()
+    {
+        // When an end-user runs vendor:publish, Laravel copies your pre-built JS
+        $this->publishes([
+            __DIR__ . '/../public/css/docs.css' => public_path('vendor/scramble/css/docs.css'),
+            __DIR__ . '/../public/js/docs.js' => public_path('vendor/scramble/js/docs.js'),
+        ], 'scramble-assets');
+    }
+
     public function bootingPackage()
     {
         Scramble::configure()
@@ -267,7 +276,7 @@ class ScrambleServiceProvider extends PackageServiceProvider
 
                 $operationExtensions = array_values(array_filter(
                     $extensions,
-                    fn ($e) => is_a($e, OperationExtension::class, true),
+                    fn($e) => is_a($e, OperationExtension::class, true),
                 ));
 
                 $transformers->append($operationExtensions);
@@ -287,39 +296,39 @@ class ScrambleServiceProvider extends PackageServiceProvider
     }
 
     private function registerRoutes(): void
-{
-    foreach (Scramble::getConfigurationsInstance()->all() as $api => $generatorConfig) {
-        /** @var Router $router */
-        $router = $this->app->get(Router::class);
+    {
+        foreach (Scramble::getConfigurationsInstance()->all() as $api => $generatorConfig) {
+            /** @var Router $router */
+            $router = $this->app->get(Router::class);
 
-        if ($generatorConfig->uiRoute) {
-            $cb = is_callable($generatorConfig->uiRoute)
-                ? $generatorConfig->uiRoute
-                : fn ($router, $action) => $router->get('/docs/api', $action); // ← changed
+            if ($generatorConfig->uiRoute) {
+                $cb = is_callable($generatorConfig->uiRoute)
+                    ? $generatorConfig->uiRoute
+                    : fn($router, $action) => $router->get('/docs/api', $action); // ← changed
 
-            $cb($router, function (Generator $generator) use ($api) {
-                $config = Scramble::getGeneratorConfig($api);
+                $cb($router, function (Generator $generator) use ($api) {
+                    $config = Scramble::getGeneratorConfig($api);
 
-                // ← point to your custom view
-                // return view('vendor.scramble.docs', [
-                return view('vendor.scramble.docs.custom-api', [
-                    'spec' => $generator($config),
-                    'config' => $config,
-                ]);
-            })->middleware($generatorConfig->get('middleware', [RestrictedDocsAccess::class]));
-        }
+                    // ← point to your custom view
+                    // return view('vendor.scramble.docs', [
+                    return view('vendor.scramble.docs.custom-api', [
+                        'spec' => $generator($config),
+                        'config' => $config,
+                    ]);
+                })->middleware($generatorConfig->get('middleware', [RestrictedDocsAccess::class]));
+            }
 
-        if ($generatorConfig->documentRoute) {
-            $cb = is_callable($generatorConfig->documentRoute)
-                ? $generatorConfig->documentRoute
-                : fn ($router, $action) => $router->get('/docs/api.json', $action);
+            if ($generatorConfig->documentRoute) {
+                $cb = is_callable($generatorConfig->documentRoute)
+                    ? $generatorConfig->documentRoute
+                    : fn($router, $action) => $router->get('/docs/api.json', $action);
 
-            $cb($router, function (Generator $generator) use ($api) {
-                $config = Scramble::getGeneratorConfig($api);
+                $cb($router, function (Generator $generator) use ($api) {
+                    $config = Scramble::getGeneratorConfig($api);
 
-                return response()->json($generator($config), options: JSON_PRETTY_PRINT);
-            })->middleware($generatorConfig->get('middleware', [RestrictedDocsAccess::class]));
+                    return response()->json($generator($config), options: JSON_PRETTY_PRINT);
+                })->middleware($generatorConfig->get('middleware', [RestrictedDocsAccess::class]));
+            }
         }
     }
-}
 }
